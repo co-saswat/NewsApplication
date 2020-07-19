@@ -7,6 +7,8 @@ import android.net.Uri;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Filter;
+import android.widget.Filterable;
 import android.widget.ImageView;
 import android.widget.TextView;
 
@@ -17,16 +19,22 @@ import com.bumptech.glide.Glide;
 
 import java.util.ArrayList;
 
-public class CustomAdapter extends RecyclerView.Adapter<CustomAdapter.MyViewHolder> {
+public class CustomAdapter extends RecyclerView.Adapter<CustomAdapter.MyViewHolder> implements Filterable {
 
     Context context;
     ArrayList<Article> articles;
+    ArrayList<Article> displayArticles;
+    ArrayList<Article> suggestions;
+    NewsFilter filter;
     Activity activity;
 
     public CustomAdapter(Activity activity, Context context, ArrayList<Article> articles) {
         this.activity = activity;
         this.context = context;
         this.articles = articles;
+        this.displayArticles = (ArrayList<Article>) articles.clone();
+        this.suggestions = new ArrayList<>();
+        filter = new NewsFilter();
     }
 
     @NonNull
@@ -38,20 +46,27 @@ public class CustomAdapter extends RecyclerView.Adapter<CustomAdapter.MyViewHold
 
     @Override
     public void onBindViewHolder(@NonNull MyViewHolder holder, int position) {
-        Glide.with(context).load(articles.get(position).urlToImage).into(holder.img_view_news);
-        holder.tv_title_name.setText(articles.get(position).title);
-        holder.tv_content_name.setText(articles.get(position).content);
-        holder.tv_read_more.setOnClickListener(view -> {
-            Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(articles.get(position).url));
-            activity.startActivity(intent);
+        if (displayArticles.get(position) != null) {
+            Glide.with(context).load(displayArticles.get(position).urlToImage).into(holder.img_view_news);
+            holder.tv_title_name.setText(displayArticles.get(position).title);
+            holder.tv_content_name.setText(displayArticles.get(position).description);
+            holder.tv_read_more.setOnClickListener(view -> {
+                Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(displayArticles.get(position).url));
+                activity.startActivity(intent);
 
-        });
+            });
+        }
 
     }
 
     @Override
     public int getItemCount() {
-        return articles.size();
+        return displayArticles != null ? displayArticles.size() : 0;
+    }
+
+    @Override
+    public Filter getFilter() {
+        return filter;
     }
 
     public class MyViewHolder extends RecyclerView.ViewHolder {
@@ -68,6 +83,46 @@ public class CustomAdapter extends RecyclerView.Adapter<CustomAdapter.MyViewHold
             tv_title_name = itemView.findViewById(R.id.tv_title_news);
             tv_read_more = itemView.findViewById(R.id.tv_read_more);
 
+        }
+    }
+
+    public void clearSearch() {
+        displayArticles.clear();
+        displayArticles = (ArrayList<Article>) articles.clone();
+        notifyDataSetChanged();
+    }
+
+    public class NewsFilter extends Filter {
+
+        @Override
+        protected FilterResults performFiltering(CharSequence charSequence) {
+            FilterResults results = new FilterResults();
+            suggestions.clear();
+            if (charSequence != null) {
+                for (Article article : articles) {
+                    if (article.title.toLowerCase().contains(charSequence.toString().toLowerCase())) {
+                        suggestions.add(article);
+                    } else if (article.description.toLowerCase().contains(charSequence.toString().toLowerCase())) {
+                        suggestions.add(article);
+                    }
+                }
+            }
+
+            results.values = suggestions;
+            results.count = suggestions.size();
+
+            return results;
+        }
+
+        @Override
+        protected void publishResults(CharSequence charSequence, FilterResults filterResults) {
+            if (filterResults != null) {
+                if (filterResults.count > 0) {
+                    //displayArticles.clear();
+                    displayArticles = (ArrayList<Article>) filterResults.values;
+                    notifyDataSetChanged();
+                }
+            }
         }
     }
 }
