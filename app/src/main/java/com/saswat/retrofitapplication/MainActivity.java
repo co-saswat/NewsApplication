@@ -28,7 +28,7 @@ public class MainActivity extends AppCompatActivity implements CategoryAdaptor.N
     RecyclerView recyclerView;
     RecyclerView horizontalRecyclerView;
     //    ArrayList<Article> articles;
-    String country = null;
+//    String country = "";
     Spinner spinner;
     CustomAdapter adapter;
     ArrayList<String> news_country;
@@ -43,7 +43,7 @@ public class MainActivity extends AppCompatActivity implements CategoryAdaptor.N
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        String[] newsCountry = getResources().getStringArray(R.array.country_name);
+//        String[] newsCountry = getResources().getStringArray(R.array.country_name);
 //        news_country = new ArrayList<String>(Arrays.asList(newsCountry));
 
 
@@ -51,6 +51,7 @@ public class MainActivity extends AppCompatActivity implements CategoryAdaptor.N
         img_delete = findViewById(R.id.igv_delete);
 
         spinner = findViewById(R.id.spinner);
+
         spinner.setOnItemSelectedListener(this);
 
 
@@ -156,7 +157,6 @@ public class MainActivity extends AppCompatActivity implements CategoryAdaptor.N
         APIInterface apiInterface = APIClient.getClient().create(APIInterface.class);
         Map<String, Object> paremeters = new HashMap<>();
         paremeters.put("category", category);
-        paremeters.put("country", getCountryPostion(country));
         paremeters.put("apiKey", "dd411b383145472ca9bbff28d0cfe05f");
         Call<Result> newsBYCategories = apiInterface.getNews(paremeters);
         newsBYCategories.enqueue(new Callback<Result>() {
@@ -176,9 +176,7 @@ public class MainActivity extends AppCompatActivity implements CategoryAdaptor.N
             }
         });
 
-        ArrayAdapter<CharSequence> list_country = ArrayAdapter.createFromResource(MainActivity.this, R.array.country_name, android.R.layout.simple_spinner_item);
-        list_country.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        spinner.setAdapter(list_country);
+
     }
 
     @Override
@@ -195,8 +193,32 @@ public class MainActivity extends AppCompatActivity implements CategoryAdaptor.N
 
     }
 
-    private String getCountryPostion(String country) {
-        return country;
+    private void getCountryPostion(String country) {
+        APIInterface apiInterface = APIClient.getClient().create(APIInterface.class);
+        Map<String, Object> paremeters = new HashMap<>();
+        paremeters.put("country", country);
+        paremeters.put("apiKey", "dd411b383145472ca9bbff28d0cfe05f");
+        Call<Result> newsBYCategories = apiInterface.getNews(paremeters);
+        newsBYCategories.enqueue(new Callback<Result>() {
+            @Override
+            public void onResponse(Call<Result> call, Response<Result> response) {
+                Result responseValue = response.body();
+                ArrayList<Article> newsArticles = responseValue.articles;
+                adapter = new CustomAdapter(MainActivity.this, MainActivity.this, newsArticles);
+                recyclerView.setAdapter(adapter);
+                dialog.hide();
+
+            }
+
+            @Override
+            public void onFailure(Call<Result> call, Throwable t) {
+                dialog.hide();
+            }
+        });
+        ArrayAdapter<CharSequence> list_country = ArrayAdapter.createFromResource(MainActivity.this, R.array.country_name, android.R.layout.simple_spinner_item);
+        list_country.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        spinner.setAdapter(list_country);
+
     }
 
     @Override
