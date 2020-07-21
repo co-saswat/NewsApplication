@@ -16,6 +16,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -23,13 +24,14 @@ import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
-public class MainActivity extends AppCompatActivity implements CategoryAdaptor.NewsCategoryOnClickListener, AdapterView.OnItemSelectedListener {
+public class MainActivity extends AppCompatActivity implements CategoryAdaptor.NewsCategoryOnClickListener {
 
     RecyclerView recyclerView;
     RecyclerView horizontalRecyclerView;
     //    ArrayList<Article> articles;
-//    String country = "";
-    Spinner spinner;
+    String country = "us";
+    String selectedCategory;
+
     CustomAdapter adapter;
     ArrayList<String> news_country;
     CategoryAdaptor categoryAdaptor;
@@ -43,16 +45,29 @@ public class MainActivity extends AppCompatActivity implements CategoryAdaptor.N
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-//        String[] newsCountry = getResources().getStringArray(R.array.country_name);
-//        news_country = new ArrayList<String>(Arrays.asList(newsCountry));
+        String[] newsCountry = getResources().getStringArray(R.array.country_name);
+        news_country = new ArrayList<>(Arrays.asList(newsCountry));
 
 
         ed_search = findViewById(R.id.et_search);
         img_delete = findViewById(R.id.igv_delete);
 
-        spinner = findViewById(R.id.spinner);
+        Spinner spinner = findViewById(R.id.spinner);
+        ArrayAdapter<String> countryAdaptor = new ArrayAdapter<>(MainActivity.this, R.layout.cell_spinner, R.id.tv_country_holder, news_country);
+        spinner.setAdapter(countryAdaptor);
 
-        spinner.setOnItemSelectedListener(this);
+        spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {
+                country = news_country.get(i);
+                getNewsByCategory(selectedCategory);
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> adapterView) {
+
+            }
+        });
 
 
         dialog = new ProgressDialog(MainActivity.this);
@@ -98,6 +113,8 @@ public class MainActivity extends AppCompatActivity implements CategoryAdaptor.N
             }
         });
         getNews();
+        selectedCategory = "";
+        getNewsByCategory("");
     }
 
     private void getNews() {
@@ -157,6 +174,7 @@ public class MainActivity extends AppCompatActivity implements CategoryAdaptor.N
         APIInterface apiInterface = APIClient.getClient().create(APIInterface.class);
         Map<String, Object> paremeters = new HashMap<>();
         paremeters.put("category", category);
+        paremeters.put("country", country);
         paremeters.put("apiKey", "dd411b383145472ca9bbff28d0cfe05f");
         Call<Result> newsBYCategories = apiInterface.getNews(paremeters);
         newsBYCategories.enqueue(new Callback<Result>() {
@@ -181,48 +199,9 @@ public class MainActivity extends AppCompatActivity implements CategoryAdaptor.N
 
     @Override
     public void onNewsCategoryClick(String category) {
+        selectedCategory = category;
         getNewsByCategory(category);
     }
 
 
-    @Override
-    public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {
-        int pos = spinner.getSelectedItemPosition();
-        String country_item = String.valueOf(news_country.get(pos));
-        getCountryPostion(country_item);
-
-    }
-
-    private void getCountryPostion(String country) {
-        APIInterface apiInterface = APIClient.getClient().create(APIInterface.class);
-        Map<String, Object> paremeters = new HashMap<>();
-        paremeters.put("country", country);
-        paremeters.put("apiKey", "dd411b383145472ca9bbff28d0cfe05f");
-        Call<Result> newsBYCategories = apiInterface.getNews(paremeters);
-        newsBYCategories.enqueue(new Callback<Result>() {
-            @Override
-            public void onResponse(Call<Result> call, Response<Result> response) {
-                Result responseValue = response.body();
-                ArrayList<Article> newsArticles = responseValue.articles;
-                adapter = new CustomAdapter(MainActivity.this, MainActivity.this, newsArticles);
-                recyclerView.setAdapter(adapter);
-                dialog.hide();
-
-            }
-
-            @Override
-            public void onFailure(Call<Result> call, Throwable t) {
-                dialog.hide();
-            }
-        });
-        ArrayAdapter<CharSequence> list_country = ArrayAdapter.createFromResource(MainActivity.this, R.array.country_name, android.R.layout.simple_spinner_item);
-        list_country.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        spinner.setAdapter(list_country);
-
-    }
-
-    @Override
-    public void onNothingSelected(AdapterView<?> adapterView) {
-
-    }
 }

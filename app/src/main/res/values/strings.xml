@@ -11,8 +11,8 @@
     </string-array>
 
     <string-array name="country_name">
-        <item>cn</item>
         <item>us</item>
+        <item>cn</item>
         <item>in</item>
         <item>gb</item>
     </string-array>
